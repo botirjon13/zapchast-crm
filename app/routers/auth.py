@@ -12,7 +12,7 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 @router.post('/register', response_model=dict)
-def register(u: schemas.UserCreate, db: Session = Depends(next(get_db))):
+def register(u: schemas.UserCreate, db: Session = Depends(get_db)):
     # simple registration, no duplicate check for brevity
     existing = db.query(models.User).filter(models.User.username==u.username).first()
     if existing:
@@ -22,14 +22,14 @@ def register(u: schemas.UserCreate, db: Session = Depends(next(get_db))):
     return {"msg":"user created","username":user.username}
 
 @router.post('/login', response_model=schemas.Token)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(next(get_db))):
+def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username==form.username).first()
     if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid credentials')
     token = create_access_token({"sub": user.username, "user_id": user.id})
     return {"access_token": token, "token_type":"bearer"}
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(next(get_db))):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     payload = decode_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail='Invalid token')
