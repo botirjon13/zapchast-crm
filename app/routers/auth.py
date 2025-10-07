@@ -1,28 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app import models, schemas
-from app.database import get_db
-from app.security import hash_password, verify_password, create_access_token, decode_token
-from fastapi.security import OAuth2PasswordRequestForm
+from passlib.context import CryptContext
+from app import models, schemas, database
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
-@router.post('/login', response_model=schemas.Token)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username==form.username).first()
-    if not user or not verify_password(form.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid credentials')
-    token = create_access_token({'sub': user.username, 'user_id': user.id})
-    return {'access_token': token, 'token_type':'bearer'}
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@router.post('/login_json', response_model=schemas.Token)
-def login_json(payload: dict, db: Session = Depends(get_db)):
-    username = payload.get('username')
-    password = payload.get('password')
-    if not username or not password:
-        raise HTTPException(status_code=400, detail='username and password required')
-    user = db.query(models.User).filter(models.User.username==username).first()
-    if not user or not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid credentials')
-    token = create_access_token({'sub': user.username, 'user_id': user.id})
-    return {'access_token': token, 'token_type':'bearer'}
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+@router.post("/register")
+def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    db_user = db.query(models.User).filter(models.User.username == user.username).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    hashed = get_password_hash(user.password)
+    db_user = models.User(username=user.username, hashed_password=hashed)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return {"message": "User created successfully"}
+
+@router.post("/login")
+def login(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
+    db_user = db.query(models.User).filter(models.User.username == user.username).first()
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    return {"message": f"Welcome, {user.username}!"}
