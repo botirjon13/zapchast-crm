@@ -1,39 +1,41 @@
 from pydantic import BaseModel
-
-class UserCreate(BaseModel):
-    username: str
-    password: str
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
+from typing import Optional, List
 
 class CustomerBase(BaseModel):
-    name: str
-    phone: str
-    address: str
+    full_name: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
 
 class CustomerOut(CustomerBase):
     id: int
-    class Config:
-        from_attributes = True
+    created_at: Optional[str] = None
+    model_config = {"from_attributes": True}
 
 class PartBase(BaseModel):
     name: str
     price: float
     quantity: int
+    sku: Optional[str] = None
+    description: Optional[str] = None
 
 class PartOut(PartBase):
     id: int
-    class Config:
-        from_attributes = True
+    created_at: Optional[str] = None
+    model_config = {"from_attributes": True}
 
-class OrderBase(BaseModel):
-    customer_id: int
+class OrderItemIn(BaseModel):
     part_id: int
-    quantity: int
+    qty: int
 
-class OrderOut(OrderBase):
+class OrderIn(BaseModel):
+    customer_id: int
+    items: List[OrderItemIn]
+
+class OrderOut(BaseModel):
     id: int
-    class Config:
-        from_attributes = True
+    customer_id: int
+    status: str
+    total_amount: float
+    items: List[dict] = []
+    created_at: Optional[str] = None
+    model_config = {"from_attributes": True}
