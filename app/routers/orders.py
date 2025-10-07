@@ -1,52 +1,72 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from decimal import Decimal
 from app import models, schemas, database
 
-router = APIRouter(prefix="/orders", tags=["Orders"])
+router = APIRouter(prefix='/orders', tags=['Orders'])
 
-@router.post("/", response_model=schemas.OrderOut)
-def create_order(order: schemas.OrderBase, db: Session = Depends(database.get_db)):
-    customer = db.query(models.Customer).filter(models.Customer.id == order.customer_id).first()
-    part = db.query(models.Part).filter(models.Part.id == order.part_id).first()
-
+@router.post('/', response_model=schemas.OrderOut)
+def create_order(o: schemas.OrderIn, db: Session = Depends(database.get_db)):
+    customer = db.query(models.Customer).filter(models.Customer.id == o.customer_id).first()
     if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    if not part:
-        raise HTTPException(status_code=404, detail="Part not found")
-
-    if order.quantity > part.quantity:
-        raise HTTPException(status_code=400, detail="Not enough parts in stock")
-
-    new_order = models.Order(
-        customer_id=order.customer_id,
-        part_id=order.part_id,
-        quantity=order.quantity
-    )
-    db.add(new_order)
-
-    # Ombordagi miqdorni kamaytirish
-    part.quantity -= order.quantity
+        raise HTTPException(status_code=404, detail='Customer not found')
+    order = models.Order(customer_id=customer.id, status='created', total_amount=0)
+    db.add(order)
     db.commit()
-    db.refresh(new_order)
-    return new_order
+    db.refresh(order)
+    total = Decimal(0)
+    for it in o.items:
+        part = db.query(models.Part).filter(models.Part.id == it.part_id).first()
+        if not part:
+            db.delete(order); db.commit()
+            raise HTTPException(status_code=404, detail=f'Part {it.part_id} not found')
+        if part.quantity < it.qty:
+            db.delete(order); db.commit()
+            raise HTTPException(status_code=400, detail=f'Not enough stock for part {part.id}')
+        unit = Decimal(part.price or 0)
+        line = unit * it.qty
+        oi = models.OrderItem(order_id=order.id, part_id=part.id, qty=it.qty, unit_price=unit, line_total=line)
+        db.add(oi)
+        part.quantity -= it.qty
+        total += line
+    order.total_amount = total
+    db.commit()
+    db.refresh(order)
+    items = []
+    for it in order.items:
+        items.append({'id': it.id, 'part_id': it.part_id, 'qty': it.qty, 'unit_price': float(it.unit_price), 'line_total': float(it.line_total)})
+    return {'id': order.id, 'customer_id': order.customer_id, 'status': order.status, 'total_amount': float(order.total_amount), 'items': items, 'created_at': order.created_at.isoformat()}
 
+@router.get('/', response_model=list[schemas.OrderOut])
+def list_orders(db: Session = Depends(database.get_db)):
+    orders = db.query(models.Order).all()
+    out = []
+    for o in orders:
+        items = []
+        for it in o.items:
+            items.append({'id': it.id, 'part_id': it.part_id, 'qty': it.qty, 'unit_price': float(it.unit_price), 'line_total': float(it.line_total)})
+        out.append({'id': o.id, 'customer_id': o.customer_id, 'status': o.status, 'total_amount': float(o.total_amount), 'items': items, 'created_at': o.created_at.isoformat()})
+    return out
 
-@router.get("/", response_model=list[schemas.OrderOut])
-def get_orders(db: Session = Depends(database.get_db)):
-    return db.query(models.Order).all()
+@router.get('/{order_id}', response_model=schemas.OrderOut)
+def get_order(order_id: int, db: Session = Depends(database.get_db)):
+    o = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not o:
+        raise HTTPException(status_code=404, detail='Order not found')
+    items = []
+    for it in o.items:
+        items.append({'id': it.id, 'part_id': it.part_id, 'qty': it.qty, 'unit_price': float(it.unit_price), 'line_total': float(it.line_total)})
+    return {'id': o.id, 'customer_id': o.customer_id, 'status': o.status, 'total_amount': float(o.total_amount), 'items': items, 'created_at': o.created_at.isoformat()}
 
-
-@router.delete("/{order_id}")
+@router.delete('/{order_id}')
 def delete_order(order_id: int, db: Session = Depends(database.get_db)):
-    order = db.query(models.Order).filter(models.Order.id == order_id).first()
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-
-    # Buyurtma o‘chirilganda omborga qayta qo‘shish
-    part = db.query(models.Part).filter(models.Part.id == order.part_id).first()
-    if part:
-        part.quantity += order.quantity
-
-    db.delete(order)
+    o = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not o:
+        raise HTTPException(status_code=404, detail='Order not found')
+    for it in o.items:
+        part = db.query(models.Part).filter(models.Part.id == it.part_id).first()
+        if part:
+            part.quantity += it.qty
+    db.delete(o)
     db.commit()
-    return {"message": "Order deleted successfully"}
+    return {'detail': 'Order deleted'}
