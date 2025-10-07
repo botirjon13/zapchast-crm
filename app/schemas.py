@@ -1,53 +1,39 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
-from decimal import Decimal
+from pydantic import BaseModel
 
 class UserCreate(BaseModel):
     username: str
     password: str
-    full_name: Optional[str]
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = 'bearer'
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
 class CustomerBase(BaseModel):
     name: str
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    address: Optional[str] = None
+    phone: str
+    address: str
 
 class CustomerOut(CustomerBase):
     id: int
-    created_at: Optional[str]
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PartBase(BaseModel):
-    sku: Optional[str] = None
     name: str
-    description: Optional[str] = None
-    price: Decimal = Field(default=0)
+    price: float
+    quantity: int
 
 class PartOut(PartBase):
     id: int
-    created_at: Optional[str]
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-class OrderItemCreate(BaseModel):
+class OrderBase(BaseModel):
+    customer_id: int
     part_id: int
-    qty: int
+    quantity: int
 
-class OrderCreate(BaseModel):
-    customer_id: int
-    items: List[OrderItemCreate]
-
-class OrderOut(BaseModel):
+class OrderOut(OrderBase):
     id: int
-    customer_id: int
-    user_id: Optional[int]
-    status: str
-    total_amount: Decimal
     class Config:
-        orm_mode = True
+        from_attributes = True
