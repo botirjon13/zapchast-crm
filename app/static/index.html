@@ -1,228 +1,76 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Zapchat CRM - Simple UI</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <title>Zapchast CRM</title>
 </head>
-<body class="p-4">
-  <div class="container">
-    <h1>Zapchat CRM - Simple frontend</h1>
+<body>
+    <h1>Zapchast CRM</h1>
 
-    <div id="auth" class="mb-4">
-      <h3>Register</h3>
-<input type="text" id="register_fullname" placeholder="Full name" />
-<input type="text" id="register_username" placeholder="Username" />
-<input type="password" id="register_password" placeholder="Password" />
-<button onclick="register()">Register</button>
+    <h2>Login</h2>
+    <input type="text" id="login_username" placeholder="Username" />
+    <input type="password" id="login_password" placeholder="Password" />
+    <button onclick="login()">Login</button>
 
-<script>
-async function register() {
-    const data = {
-        username: document.getElementById("register_username").value,
-        password: document.getElementById("register_password").value,
-        full_name: document.getElementById("register_fullname").value
-    };
+    <hr>
 
-    const res = await fetch("/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    });
+    <h2>Register</h2>
+    <input type="text" id="register_fullname" placeholder="Full name" />
+    <input type="text" id="register_username" placeholder="Username" />
+    <input type="password" id="register_password" placeholder="Password" />
+    <button onclick="register()">Register</button>
 
-    if (res.ok) {
-        alert("✅ Successfully registered! Now you can login.");
-    } else {
-        const err = await res.text();
-        alert("❌ Registration failed:\n" + err);
+    <script>
+    async function register() {
+        const data = {
+            username: document.getElementById("register_username").value,
+            password: document.getElementById("register_password").value,
+            full_name: document.getElementById("register_fullname").value
+        };
+
+        try {
+            const res = await fetch("/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                alert("✅ Registered successfully!");
+            } else {
+                const err = await res.text();
+                alert("❌ Register failed:\n" + err);
+            }
+        } catch (e) {
+            alert("❌ Network error:\n" + e.message);
+        }
     }
-}
-</script>
 
-    <div id="main" style="display:none;">
-      <div class="row">
-        <div class="col-md-6">
-          <h4>Parts</h4>
-          <div class="mb-2">
-            <input id="part-name" placeholder="name" class="form-control mb-1"/>
-            <input id="part-sku" placeholder="sku (optional)" class="form-control mb-1"/>
-            <input id="part-price" placeholder="price" class="form-control mb-1"/>
-            <input id="part-qty" placeholder="quantity" class="form-control mb-1"/>
-            <button id="create-part" class="btn btn-success btn-sm">Create Part</button>
-          </div>
-          <ul id="parts-list" class="list-group mt-2"></ul>
-        </div>
+    async function login() {
+        const data = {
+            username: document.getElementById("login_username").value,
+            password: document.getElementById("login_password").value
+        };
 
-        <div class="col-md-6">
-          <h4>Customers</h4>
-          <div class="mb-2">
-            <input id="cust-name" placeholder="name" class="form-control mb-1"/>
-            <input id="cust-phone" placeholder="phone" class="form-control mb-1"/>
-            <button id="create-cust" class="btn btn-success btn-sm">Create Customer</button>
-          </div>
-          <ul id="cust-list" class="list-group mt-2"></ul>
-        </div>
-      </div>
+        try {
+            const res = await fetch("/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
 
-      <hr/>
-      <h4>Create Order</h4>
-      <div class="row g-2">
-        <div class="col-md-4">
-          <select id="order-customer" class="form-select"><option value="">Select customer</option></select>
-        </div>
-        <div class="col-md-4">
-          <select id="order-part" class="form-select"><option value="">Select part</option></select>
-        </div>
-        <div class="col-md-2">
-          <input id="order-qty" class="form-control" type="number" value="1" min="1"/>
-        </div>
-        <div class="col-md-2">
-          <button id="add-order-item" class="btn btn-primary">Add Item</button>
-        </div>
-      </div>
-      <ul id="order-items" class="list-group mt-2"></ul>
-      <button id="create-order" class="btn btn-success mt-2">Create Order</button>
-
-      <hr/>
-      <h4>Orders</h4>
-      <ul id="orders-list" class="list-group mt-2"></ul>
-    </div>
-
-  </div>
-
-<script>
-let token = localStorage.getItem('zap_token') || null;
-const base = '';
-
-// Auth handlers
-document.getElementById('register').onclick = async ()=> {
-  const u = document.getElementById('username').value;
-  const p = document.getElementById('password').value;
-  const res = await fetch('/auth/register', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u,password:p})});
-  const j = await res.json();
-  alert(j.msg || JSON.stringify(j));
-}
-
-document.getElementById('login').onclick = async ()=> {
-  const u = document.getElementById('username').value;
-  const p = document.getElementById('password').value;
-  const fd = new URLSearchParams(); fd.append('username', u); fd.append('password', p);
-  const res = await fetch('/auth/login', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: fd});
-  const j = await res.json();
-  if(j.access_token){
-    token = j.access_token; localStorage.setItem('zap_token', token);
-    document.getElementById('token').innerText = 'Token set (saved)';
-    showMain();
-    await loadAll();
-  } else {
-    alert(JSON.stringify(j));
-  }
-}
-
-document.getElementById('logout').onclick = ()=>{
-  token = null; localStorage.removeItem('zap_token'); document.getElementById('token').innerText='Logged out'; hideMain();
-}
-
-// Show/hide main UI
-function showMain(){ document.getElementById('main').style.display='block'; }
-function hideMain(){ document.getElementById('main').style.display='none'; }
-
-// Parts
-async function loadParts(){
-  const res = await fetch('/parts', {headers: {'Authorization':'Bearer '+token}});
-  const arr = await res.json();
-  const ul = document.getElementById('parts-list'); ul.innerHTML='';
-  const sel = document.getElementById('order-part'); sel.innerHTML='<option value="">Select part</option>';
-  arr.forEach(p=> { const li=document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center'; li.innerText = p.id + ' - ' + p.name + ' ('+p.price+')'; 
-    const btn=document.createElement('button'); btn.className='btn btn-sm btn-danger'; btn.innerText='Delete'; btn.onclick=async ()=>{ await fetch('/parts/'+p.id,{method:'DELETE', headers:{'Authorization':'Bearer '+token}}); loadParts(); };
-    li.appendChild(btn); ul.appendChild(li);
-    const opt = document.createElement('option'); opt.value = p.id; opt.text = p.name + ' ('+p.price+')'; sel.appendChild(opt);
-  });
-}
-
-// Create part
-document.getElementById('create-part').onclick = async ()=> {
-  const name = document.getElementById('part-name').value;
-  const sku = document.getElementById('part-sku').value;
-  const price = Number(document.getElementById('part-price').value || 0);
-  const qty = Number(document.getElementById('part-qty').value || 0);
-  const res = await fetch('/parts', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({name:name,sku:sku,price:price})});
-  if(res.ok){ document.getElementById('part-name').value=''; document.getElementById('part-sku').value=''; document.getElementById('part-price').value=''; loadParts(); } else { alert(JSON.stringify(await res.json())); }
-}
-
-// Customers
-async function loadCustomers(){
-  const res = await fetch('/customers', {headers: {'Authorization':'Bearer '+token}});
-  const arr = await res.json();
-  const ul = document.getElementById('cust-list'); ul.innerHTML='';
-  const sel = document.getElementById('order-customer'); sel.innerHTML='<option value="">Select customer</option>';
-  arr.forEach(c=> { const li=document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center'; li.innerText = c.id + ' - ' + c.name + ' ' + (c.phone||''); 
-    const btn=document.createElement('button'); btn.className='btn btn-sm btn-danger'; btn.innerText='Delete'; btn.onclick=async ()=>{ await fetch('/customers/'+c.id,{method:'DELETE', headers:{'Authorization':'Bearer '+token}}); loadCustomers(); };
-    li.appendChild(btn); ul.appendChild(li);
-    const opt = document.createElement('option'); opt.value = c.id; opt.text = c.name + ' ' + (c.phone||''); sel.appendChild(opt);
-  });
-}
-
-document.getElementById('create-cust').onclick = async ()=> {
-  const name = document.getElementById('cust-name').value;
-  const phone = document.getElementById('cust-phone').value;
-  const res = await fetch('/customers', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({name:name,phone:phone})});
-  if(res.ok){ document.getElementById('cust-name').value=''; document.getElementById('cust-phone').value=''; loadCustomers(); } else { alert(JSON.stringify(await res.json())); }
-}
-
-// Orders
-let tmpOrderItems = [];
-document.getElementById('add-order-item').onclick = ()=> {
-  const partId = document.getElementById('order-part').value;
-  const qty = Number(document.getElementById('order-qty').value || 1);
-  if(!partId) return alert('Select a part');
-  tmpOrderItems.push({part_id: Number(partId), qty: qty});
-  renderOrderItems();
-}
-
-function renderOrderItems(){
-  const ul = document.getElementById('order-items'); ul.innerHTML='';
-  tmpOrderItems.forEach((it, idx)=>{
-    const li = document.createElement('li'); li.className='list-group-item d-flex justify-content-between align-items-center';
-    li.innerText = 'Part ID: '+it.part_id + '  Qty: '+it.qty;
-    const btn = document.createElement('button'); btn.className='btn btn-sm btn-danger'; btn.innerText='Remove'; btn.onclick=()=>{ tmpOrderItems.splice(idx,1); renderOrderItems(); };
-    li.appendChild(btn); ul.appendChild(li);
-  });
-}
-
-document.getElementById('create-order').onclick = async ()=> {
-  const customerId = Number(document.getElementById('order-customer').value);
-  if(!customerId) return alert('Select customer');
-  if(tmpOrderItems.length === 0) return alert('Add items');
-  const res = await fetch('/orders', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({customer_id: customerId, items: tmpOrderItems})});
-  if(res.ok){ tmpOrderItems = []; renderOrderItems(); loadOrders(); alert('Order created'); } else { alert(JSON.stringify(await res.json())); }
-}
-
-// Load orders
-async function loadOrders(){
-  const res = await fetch('/orders', {headers: {'Authorization':'Bearer '+token}});
-  const arr = await res.json();
-  const ul = document.getElementById('orders-list'); ul.innerHTML='';
-  arr.forEach(o=>{ const li = document.createElement('li'); li.className='list-group-item'; li.innerText = 'Order#'+o.id+' Customer:'+o.customer_id+' Total:'+o.total_amount+' Status:'+o.status; ul.appendChild(li); });
-}
-
-// Load all
-async function loadAll(){
-  await loadParts();
-  await loadCustomers();
-  await loadOrders();
-}
-
-// On load check token
-if(token){
-  document.getElementById('token').innerText='Token loaded (saved)';
-  showMain();
-  loadAll();
-} else {
-  document.getElementById('token').innerText='Not logged in';
-  hideMain();
-}
-</script>
+            if (res.ok) {
+                const result = await res.json();
+                localStorage.setItem("token", result.access_token);
+                alert("✅ Login successful!");
+            } else {
+                const err = await res.text();
+                alert("❌ Login failed:\n" + err);
+            }
+        } catch (e) {
+            alert("❌ Network error:\n" + e.message);
+        }
+    }
+    </script>
 </body>
 </html>
