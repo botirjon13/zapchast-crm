@@ -3,8 +3,10 @@ from fastapi.staticfiles import StaticFiles
 from app.routers import auth, customers, parts, orders
 from app.database import engine, Base
 import os
-# app/main.py ichiga importlar bilan birga
-from fastapi import FastAPI
+
+# Create DB tables (simple startup auto-create; for production use migrations)
+Base.metadata.create_all(bind=engine)
+
 from app.database import SessionLocal
 from app import models
 from app.security import hash_password
@@ -23,19 +25,16 @@ def create_default_admin():
             )
             db.add(user)
             db.commit()
-            print("Default admin created:", DEFAULT_ADMIN_USERNAME)
+            print('Default admin created:', DEFAULT_ADMIN_USERNAME)
         else:
-            print("Default admin already exists")
+            print('Default admin already exists')
     except Exception as e:
-        print("Error creating default admin:", e)
+        print('Error creating default admin:', e)
     finally:
         db.close()
 
-# Create DB tables (simple startup auto-create; for production use migrations)
-Base.metadata.create_all(bind=engine)
-# Chaqarish: (mavjud joyga moslab)
+# create default admin AFTER tables are created
 create_default_admin()
-
 
 app = FastAPI(title="Zapchat CRM")
 
