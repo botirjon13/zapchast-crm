@@ -32,13 +32,31 @@ def register(u: schemas.UserCreate, db: Session = Depends(get_db)):
     db.add(user); db.commit(); db.refresh(user)
     return {"msg":"user created","username":user.username}
 
-@router.post('/login', response_model=schemas.Token)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username==form.username).first()
-    if not user or not verify_password(form.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid credentials')
-    token = create_access_token({"sub": user.username, "user_id": user.id})
-    return {"access_token": token, "token_type":"bearer"}
+async function login() {
+  const username = document.getElementById('login_username').value;
+  const password = document.getElementById('login_password').value;
+
+  const form = new URLSearchParams();
+  form.append('username', username);
+  form.append('password', password);
+
+  const res = await fetch('/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: form
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    localStorage.setItem('zap_token', data.access_token);
+    alert('Login muvaffaqiyatli');
+  } else {
+    const text = await res.text();
+    alert('Xato: ' + text);
+  }
+}
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     payload = decode_token(token)
