@@ -8,7 +8,7 @@ from decimal import Decimal
 router = APIRouter()
 
 @router.post('/', response_model=schemas.OrderOut)
-def create_order(o: schemas.OrderCreate, db: Session = Depends(next(get_db)), user=Depends(get_current_user)):
+def create_order(o: schemas.OrderCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     customer = db.query(models.Customer).get(o.customer_id)
     if not customer:
         raise HTTPException(status_code=404, detail='Customer not found')
@@ -29,7 +29,7 @@ def create_order(o: schemas.OrderCreate, db: Session = Depends(next(get_db)), us
     return order
 
 @router.get('/', response_model=list)
-def list_orders(db: Session = Depends(next(get_db)), user=Depends(get_current_user)):
+def list_orders(db: Session = Depends(get_db), user=Depends(get_current_user)):
     orders = db.query(models.Order).all()
     out = []
     for o in orders:
