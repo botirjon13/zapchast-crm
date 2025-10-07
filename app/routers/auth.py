@@ -10,6 +10,17 @@ from typing import Optional
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+@router.post("/login_json")
+def login_json(payload: dict, db: Session = Depends(get_db)):
+    username = payload.get("username")
+    password = payload.get("password")
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="username and password required")
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user or not verify_password(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_access_token({"sub": user.username, "user_id": user.id})
+    return {"access_token": token, "token_type": "bearer"}
 
 @router.post('/register', response_model=dict)
 def register(u: schemas.UserCreate, db: Session = Depends(get_db)):
