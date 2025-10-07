@@ -31,11 +31,11 @@ def create_default_admin():
     finally:
         db.close()
 
+# Create DB tables (simple startup auto-create; for production use migrations)
+Base.metadata.create_all(bind=engine)
 # Chaqarish: (mavjud joyga moslab)
 create_default_admin()
 
-# Create DB tables (simple startup auto-create; for production use migrations)
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Zapchat CRM")
 
