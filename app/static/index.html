@@ -11,19 +11,34 @@
     <h1>Zapchat CRM - Simple frontend</h1>
 
     <div id="auth" class="mb-4">
-      <h4>Register / Login</h4>
-      <div class="row g-2">
-        <div class="col-4"><input id="username" placeholder="username" class="form-control"/></div>
-        <div class="col-4"><input id="password" placeholder="password" type="password" class="form-control"/></div>
-        <div class="col-4"><input id="fullname" placeholder="fullname" class="form-control"/></div>
-        <div class="col-4">
-          <button id="register" class="btn btn-secondary">Register</button>
-          <button id="login" class="btn btn-primary">Login</button>
-          <button id="logout" class="btn btn-outline-danger">Logout</button>
-        </div>
-      </div>
-      <div id="token" class="mt-2 text-truncate"></div>
-    </div>
+      <h3>Register</h3>
+<input type="text" id="register_fullname" placeholder="Full name" />
+<input type="text" id="register_username" placeholder="Username" />
+<input type="password" id="register_password" placeholder="Password" />
+<button onclick="register()">Register</button>
+
+<script>
+async function register() {
+    const data = {
+        username: document.getElementById("register_username").value,
+        password: document.getElementById("register_password").value,
+        full_name: document.getElementById("register_fullname").value
+    };
+
+    const res = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        alert("✅ Successfully registered! Now you can login.");
+    } else {
+        const err = await res.text();
+        alert("❌ Registration failed:\n" + err);
+    }
+}
+</script>
 
     <div id="main" style="display:none;">
       <div class="row">
