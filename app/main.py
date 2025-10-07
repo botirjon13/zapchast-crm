@@ -3,6 +3,36 @@ from fastapi.staticfiles import StaticFiles
 from app.routers import auth, customers, parts, orders
 from app.database import engine, Base
 import os
+# app/main.py ichiga importlar bilan birga
+from fastapi import FastAPI
+from app.database import SessionLocal
+from app import models
+from app.security import hash_password
+from app.core import DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_FULLNAME
+
+def create_default_admin():
+    db = SessionLocal()
+    try:
+        existing = db.query(models.User).filter(models.User.username == DEFAULT_ADMIN_USERNAME).first()
+        if not existing:
+            user = models.User(
+                username=DEFAULT_ADMIN_USERNAME,
+                full_name=DEFAULT_ADMIN_FULLNAME,
+                password_hash=hash_password(DEFAULT_ADMIN_PASSWORD),
+                is_admin=True
+            )
+            db.add(user)
+            db.commit()
+            print("Default admin created:", DEFAULT_ADMIN_USERNAME)
+        else:
+            print("Default admin already exists")
+    except Exception as e:
+        print("Error creating default admin:", e)
+    finally:
+        db.close()
+
+# Chaqarish: (mavjud joyga moslab)
+create_default_admin()
 
 # Create DB tables (simple startup auto-create; for production use migrations)
 Base.metadata.create_all(bind=engine)
