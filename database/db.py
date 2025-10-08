@@ -1,38 +1,35 @@
-import os
-from sqlalchemy import create_engine, Column, Integer, String
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import Column, Integer, String, select
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/dbname")
-
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+DATABASE_URL = "postgresql+asyncpg://user:password@localhost/dbname"  # O'zgartiring!
 
 Base = declarative_base()
+engine = create_async_engine(DATABASE_URL, echo=False)
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 class User(Base):
     __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    telegram_id = Column(Integer, unique=True, index=True)
+    username = Column(String, nullable=True)
+    role = Column(String, default="customer")
 
-    id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(Integer, unique=True, index=True, nullable=False)
-    full_name = Column(String, nullable=False)
-    role = Column(String, nullable=False)
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+async def get_user_role(telegram_id: int):
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.telegram_id == telegram_id))
+        user = result.scalars().first()
+        if user:
+            return user.role
+        return None
 
-def get_user_role(telegram_id: int):
-    session = SessionLocal()
-    user = session.query(User).filter(User.telegram_id == telegram_id).first()
-    session.close()
-    if user:
-        return user.role
-    return None
-
-def add_user(telegram_id: int, full_name: str, role: str):
-    session = SessionLocal()
-    user = session.query(User).filter(User.telegram_id == telegram_id).first()
-    if user is None:
-        user = User(telegram_id=telegram_id, full_name=full_name, role=role)
+async def add_user(telegram_id: int, username: str, role: str = "customer"):
+    async with async_session() as session:
+        user = User(telegram_id=telegram_id, username=username, role=role)
         session.add(user)
-        session.commit()
-    session.close()
+        await session.commit()
