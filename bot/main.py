@@ -1,10 +1,16 @@
+import sys
 import os
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
 
+# Loyihaning ildiz papkasini python path ga qo‘shamiz
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from database.db import init_db, get_user_role, add_user
 from bot.keyboards import get_keyboard_by_role
+
+# keyingi kodlar...
 
 # Telegram token va rol uchun IDlar
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
