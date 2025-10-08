@@ -1,4 +1,0 @@
-import os
-DEFAULT_ADMIN_USERNAME = os.getenv('DEFAULT_ADMIN_USERNAME', 'admin')
-DEFAULT_ADMIN_PASSWORD = os.getenv('DEFAULT_ADMIN_PASSWORD', '1234')
-SECRET_KEY = os.getenv('SECRET_KEY', 'devsecret')
