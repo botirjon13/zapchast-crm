@@ -26,8 +26,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role = await get_user_role(user_id)
     if role is None:
         # Oldindan ma'lum qilingan admin va seller IDlari
-        ADMIN_IDS = [123456789]   # O'zgartiring o'zingizga mos
-        SELLER_IDS = [987654321]  # O'zgartiring o'zingizga mos
+        ADMIN_IDS = [1262207928]   # O'zgartiring o'zingizga mos
+        SELLER_IDS = [8450201406]  # O'zgartiring o'zingizga mos
 
         if user_id in ADMIN_IDS:
             role = "admin"
@@ -58,5 +58,6 @@ def main():
     application.run_polling()
 
 if __name__ == '__main__':
-    init_db()  # Bazani ishga tushirish
+    import asyncio
+    asyncio.run(init_db())  # ✅ TO‘G‘RI USUL
     main()
