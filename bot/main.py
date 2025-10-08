@@ -9,8 +9,8 @@ from bot.keyboards import get_keyboard_by_role
 # Telegram token va rol uchun IDlar
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
-ADMINS = {123456789}  # Admin Telegram IDlarni yozing
-SELLERS = {234567890}  # Sotuvchi Telegram IDlarni yozing
+ADMINS = {1262207928, 298157746}  # Admin Telegram IDlarni yozing
+SELLERS = {8450201406}  # Sotuvchi Telegram IDlarni yozing
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
